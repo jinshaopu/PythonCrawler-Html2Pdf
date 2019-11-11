@@ -1,4 +1,5 @@
 # coding=utf-8
+
 import logging
 import os
 import re
@@ -97,11 +98,11 @@ class Crawler(object):
         iplist = self.get_ip_list()
         proxies = self.get_random_ip(iplist)
         options = {
-            'page-size': 'Letter',
-            'margin-top': '0.75in',
-            'margin-right': '0.75in',
-            'margin-bottom': '0.75in',
-            'margin-left': '0.75in',
+            'page-size': 'A5',
+            'margin-top': '0.5in',
+            'margin-right': '0.5in',
+            'margin-bottom': '0.5in',
+            'margin-left': '0.5in',
             'encoding': "UTF-8",
             'custom-header': [
                 ('Accept-Encoding', 'gzip')
@@ -118,6 +119,7 @@ class Crawler(object):
             proxies = self.get_random_ip(iplist)  # 更换代理
             menu_page = self.request(self.start_url, headers=self.headers, proxies=proxies)
         for index, url in enumerate(self.parse_menu(menu_page)):
+            # print(url)
             if index < start_index:  # 程序挂掉之后重新跑
                 continue
             body_page = self.request(url, headers=self.headers, proxies=proxies)
@@ -192,6 +194,6 @@ class LiaoxuefengPythonCrawler(Crawler):
 
 
 if __name__ == '__main__':
-    start_url = "https://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000"
+    start_url = "https://www.liaoxuefeng.com/wiki/1016959663602400"
     crawler = LiaoxuefengPythonCrawler("廖雪峰Python教程", start_url)
     crawler.run(0)
