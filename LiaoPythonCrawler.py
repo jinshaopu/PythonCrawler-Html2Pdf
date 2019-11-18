@@ -10,6 +10,10 @@ import requests
 import random
 from bs4 import BeautifulSoup
 
+import ebooklib
+from ebooklib import epub
+from datetime import datetime
+
 html_template = """
 <!DOCTYPE html>
 <html lang="en">
@@ -21,6 +25,7 @@ html_template = """
 </body>
 </html>
 """
+
 
 class Crawler(object):
     """
@@ -36,13 +41,15 @@ class Crawler(object):
         """
         self.name = name
         self.start_url = start_url
-        self.domain = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(self.start_url))
+        self.domain = '{uri.scheme}://{uri.netloc}'.format(
+            uri=urlparse(self.start_url))
         self.headers = {
             'Connection': 'Keep-Alive',
             'Accept': 'text/html, application/xhtml+xml, */*',
             'Accept-Language': 'en-US,en;q=0.8,zh-Hans-CN;q=0.5,zh-Hans;q=0.3',
-            'User-Agent':'Mozilla/5.0 (Linux; U; Android 6.0; zh-CN; MZ-m2 note Build/MRA58K) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/40.0.2214.89 MZBrowser/6.5.506 UWS/2.10.1.22 Mobile Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Linux; U; Android 6.0; zh-CN; MZ-m2 note Build/MRA58K) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/40.0.2214.89 MZBrowser/6.5.506 UWS/2.10.1.22 Mobile Safari/537.36'
         }
+        self.mode = 'pdf'
 
     @staticmethod
     def request(url, **kwargs):
@@ -81,7 +88,7 @@ class Crawler(object):
         print("代理列表抓取成功.")
         return ip_list
 
-    def get_random_ip(self,ip_list):
+    def get_random_ip(self, ip_list):
         print("正在设置随机代理...")
         proxy_list = []
         for ip in ip_list:
@@ -92,17 +99,62 @@ class Crawler(object):
         print("代理设置成功.")
         return proxies
 
+    def save2epub(self, input):
+        """
+        文件名称数组
+        """
+        book = epub.EpubBook()
+        book.set_title(self.name)
+        book.set_language('cn')
+        book.add_author('jsp')
+        # basic spine
+        book.spine = ['nav']  # 内容
+        btoc = []  # 章节
+        index = 0
+        for html in input:
+            content = BeautifulSoup(
+                open(html, 'r', encoding='UTF-8'), "html.parser")
+            content.body
+            sbook = self.name
+            stitle = content.body.div.find('p').string
+            c1 = epub.EpubHtml(title=stitle, file_name=html)
+            c1.content = "<h1>'+{1}+'</h1><p>{0}</p>".format(
+                content.body.div, stitle)
+            print(c1.content)
+            book.add_item(c1)
+            book.spine.append(c1)
+            btoc.append(c1)
+            index += 1
+            print(index)
+
+        # 生成目录
+        book.toc = (epub.Link('intro.xhtml', '封面', 'intro'),  # 目录
+                    (epub.Section('目录'), btoc))  # 卷标 章节
+        book.add_item(epub.EpubNcx())
+        book.add_item(epub.EpubNav())
+        # define CSS style
+        style = 'BODY {color: white;}'
+        nav_css = epub.EpubItem(
+            uid="style_nav", file_name="style/nav.css", media_type="text/css", content=style)
+        # add CSS file
+        book.add_item(nav_css)
+        # write to the file
+        epub.write_epub(self.name+'.epub', book, {})
+
     def run(self, start_index):
         start = time.time()
         print("Start!")
         iplist = self.get_ip_list()
         proxies = self.get_random_ip(iplist)
         options = {
-            'page-size': 'A5',
-            'margin-top': '0.5in',
-            'margin-right': '0.5in',
-            'margin-bottom': '0.5in',
-            'margin-left': '0.5in',
+            # 字体大小
+            # 'dpi':96,
+            'page-size': 'A6',
+            # kindle:A6  notebook:A5
+            'margin-top': '0.2in',
+            'margin-right': '0.2in',
+            'margin-bottom': '0.2in',
+            'margin-left': '0.2in',
             'encoding': "UTF-8",
             'custom-header': [
                 ('Accept-Encoding', 'gzip')
@@ -114,18 +166,22 @@ class Crawler(object):
             'outline-depth': 10,
         }
         htmls = []
-        menu_page = self.request(self.start_url, headers=self.headers, proxies=proxies)
+        menu_page = self.request(
+            self.start_url, headers=self.headers, proxies=proxies)
         while menu_page.status_code != 200:
             proxies = self.get_random_ip(iplist)  # 更换代理
-            menu_page = self.request(self.start_url, headers=self.headers, proxies=proxies)
+            menu_page = self.request(
+                self.start_url, headers=self.headers, proxies=proxies)
         for index, url in enumerate(self.parse_menu(menu_page)):
             # print(url)
             if index < start_index:  # 程序挂掉之后重新跑
                 continue
-            body_page = self.request(url, headers=self.headers, proxies=proxies)
+            body_page = self.request(
+                url, headers=self.headers, proxies=proxies)
             while body_page.status_code != 200:
                 proxies = self.get_random_ip(iplist)  # 更换代理
-                body_page = self.request(url, headers=self.headers, proxies=proxies)
+                body_page = self.request(
+                    url, headers=self.headers, proxies=proxies)
             html = self.parse_body(body_page)
             f_name = ".".join([str(index), "html"])
             with open(f_name, 'wb') as f:
@@ -134,11 +190,20 @@ class Crawler(object):
                     proxies = self.get_random_ip(iplist)    # 更换代理
                 print("正在爬取第 %d 页......" % index)
                 f.write(html)
+                # if index == 1:
+                    # break
             htmls.append(f_name)
 
-        print("HTML文件下载完成，开始转换PDF")
-        pdfkit.from_file(input=htmls, output_path=self.name + ".pdf", options=options)
-        print("PDF转换完成，开始清除无用HTML文件")
+        print("HTML文件下载完成，开始转换")
+        try:
+            if self.mode == 'pdf':
+                pdfkit.from_file(input=htmls, output_path=self.name +
+                                ".pdf", options=options)
+            elif self.mode == 'epub':
+                self.save2epub(htmls)
+        except:
+            pass
+        print("转换完成，开始清除无用HTML文件")
         for html in htmls:
             os.remove(html)
         total_time = time.time() - start
@@ -149,6 +214,7 @@ class LiaoxuefengPythonCrawler(Crawler):
     """
     廖雪峰Python3教程
     """
+
     def parse_menu(self, response):
         bsObj = BeautifulSoup(response.content, "html.parser")
         menu_tag = bsObj.find_all(class_="uk-nav uk-nav-side")[1]
@@ -180,7 +246,8 @@ class LiaoxuefengPythonCrawler(Crawler):
 
             def func(m):
                 if not m.group(2).startswith("http"):
-                    rtn = "".join([m.group(1), self.domain, m.group(2), m.group(3)])
+                    rtn = "".join(
+                        [m.group(1), self.domain, m.group(2), m.group(3)])
                     return rtn
                 else:
                     return "".join([m.group(1), m.group(2), m.group(3)])
@@ -197,3 +264,10 @@ if __name__ == '__main__':
     start_url = "https://www.liaoxuefeng.com/wiki/1016959663602400"
     crawler = LiaoxuefengPythonCrawler("廖雪峰Python教程", start_url)
     crawler.run(0)
+    # bsObj = BeautifulSoup(open("E:\\项目\\PythonCrawler-Html2Pdf\\0.html",'r', encoding='UTF-8'), "html.parser")
+    # menu_tag = bsObj.body
+    # print(bsObj.body.div.find('p'))
+    # print(bsObj.body.div)
+    # for li in menu_tag.find_all("dd"):
+    # url = li.a.get("href")
+    # print(url)

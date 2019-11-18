@@ -70,11 +70,14 @@ class shukebaCrawler(Crawler):
 @click.option('--file', prompt='输入PDF文件的保存名称', help='不需要后缀.pdf，只需要提供名称即可')
 def main(url,file):
     crawler = shukebaCrawler(file, url)
+    # crawler.mode='pdf'
+    crawler.mode='epub'
     crawler.run(0)
 
 if __name__ == '__main__':
     main()   
 
+    # bsObj = BeautifulSoup("01.html", "html.parser")
     # menu_page = requests.get('https://www.shukeba.com/113044/')
     # bsObj = BeautifulSoup(menu_page.text, 'html.parser')
     # menu_tag = bsObj.find_all(class_="list")[0].find_all("dl")[1]
