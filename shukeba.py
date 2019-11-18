@@ -15,6 +15,20 @@ from LiaoPythonCrawler import Crawler
 from LiaoPythonCrawler import html_template
 
 
+html_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+{title}
+{content}
+</body>
+</html>
+"""
+
+
 class shukebaCrawler(Crawler):
 
     def parse_menu(self, response):
@@ -44,8 +58,8 @@ class shukebaCrawler(Crawler):
             title_tag.string = title
             center_tag.insert(1, title_tag)
             body.insert(1, center_tag)
-
             html = str(body)
+            # print(html)
             # body中的img标签的src相对路径的改成绝对路径
             # pattern = "(<img .*?src=\")(.*?)(\")"
 
@@ -57,8 +71,7 @@ class shukebaCrawler(Crawler):
                 else:
                     return "".join([m.group(1), m.group(2), m.group(3)])
 
-            # html = re.compile(pattern).sub(func, html)
-            html = html_template.format(content=html)
+            html = html_template.format(content=str(body),title=center_tag)
             html = html.encode("utf-8")
             return html
         except Exception as e:
@@ -68,15 +81,16 @@ class shukebaCrawler(Crawler):
 @click.command()
 @click.option('--url', prompt='输入书刊目录页', help='显示所有章节名称那一面')
 @click.option('--file', prompt='输入PDF文件的保存名称', help='不需要后缀.pdf，只需要提供名称即可')
-def main(url,file):
+def main(url, file):
     crawler = shukebaCrawler(file, url)
     # crawler.mode='pdf'
-    crawler.mode='epub'
-    crawler.run(0)
+    crawler.mode = 'epub'
+    crawler.run(500)
+
 
 if __name__ == '__main__':
-    main()   
-
+    main()
+# https://www.shukeba.com/83790/
     # bsObj = BeautifulSoup("01.html", "html.parser")
     # menu_page = requests.get('https://www.shukeba.com/113044/')
     # bsObj = BeautifulSoup(menu_page.text, 'html.parser')
@@ -85,7 +99,6 @@ if __name__ == '__main__':
     # for li in menu_tag.find_all("dd"):
     #     url = li.a.get("href")
     #     print(url)
-
 
     # menu_page = requests.get('https://www.shukeba.com/113044/93052.shtml')
     # bsObj = BeautifulSoup(menu_page.text, 'html.parser')

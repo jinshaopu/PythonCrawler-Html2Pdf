@@ -264,6 +264,7 @@ if __name__ == '__main__':
     start_url = "https://www.liaoxuefeng.com/wiki/1016959663602400"
     crawler = LiaoxuefengPythonCrawler("廖雪峰Python教程", start_url)
     crawler.run(0)
+    
     # bsObj = BeautifulSoup(open("E:\\项目\\PythonCrawler-Html2Pdf\\0.html",'r', encoding='UTF-8'), "html.parser")
     # menu_tag = bsObj.body
     # print(bsObj.body.div.find('p'))
