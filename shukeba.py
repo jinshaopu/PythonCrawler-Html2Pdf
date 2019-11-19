@@ -15,18 +15,18 @@ from LiaoPythonCrawler import Crawler
 from LiaoPythonCrawler import html_template
 
 
-html_template = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-</head>
-<body>
-{title}
-{content}
-</body>
-</html>
-"""
+# html_template = """
+# <!DOCTYPE html>
+# <html lang="en">
+# <head>
+#     <meta charset="UTF-8">
+# </head>
+# <body>
+# {title}
+# {content}
+# </body>
+# </html>
+# """
 
 
 class shukebaCrawler(Crawler):
@@ -49,7 +49,7 @@ class shukebaCrawler(Crawler):
     def parse_body(self, response):
         try:
             bsObj = BeautifulSoup(response.content, 'html.parser')
-            body = bsObj.find_all(class_="content_left")
+            body = bsObj.find(class_="content_left")
 
             # 加入标题, 居中显示
             title = bsObj.find('h1').get_text()
@@ -57,7 +57,7 @@ class shukebaCrawler(Crawler):
             title_tag = bsObj.new_tag('h1')
             title_tag.string = title
             center_tag.insert(1, title_tag)
-            body.insert(1, center_tag)
+            # body.insert(1, center_tag)
             html = str(body)
             # print(html)
             # body中的img标签的src相对路径的改成绝对路径
@@ -77,7 +77,6 @@ class shukebaCrawler(Crawler):
         except Exception as e:
             logging.error("解析错误", exc_info=True)
 
-
 @click.command()
 @click.option('--url', prompt='输入书刊目录页', help='显示所有章节名称那一面')
 @click.option('--file', prompt='输入PDF文件的保存名称', help='不需要后缀.pdf，只需要提供名称即可')
@@ -85,7 +84,7 @@ def main(url, file):
     crawler = shukebaCrawler(file, url)
     # crawler.mode='pdf'
     crawler.mode = 'epub'
-    crawler.run(500)
+    crawler.run(694)
 
 
 if __name__ == '__main__':

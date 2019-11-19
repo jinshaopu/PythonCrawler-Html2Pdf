@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 import ebooklib
 from ebooklib import epub
 from datetime import datetime
+import subprocess
 
 html_template = """
 <!DOCTYPE html>
@@ -21,10 +22,13 @@ html_template = """
     <meta charset="UTF-8">
 </head>
 <body>
+{title}
 {content}
 </body>
 </html>
 """
+
+calibre="C:\Program Files (x86)\Calibre2\ebook-convert.exe"
 
 
 class Crawler(object):
@@ -114,9 +118,9 @@ class Crawler(object):
         for html in input:
             content = BeautifulSoup(
                 open(html, 'r', encoding='UTF-8'), "html.parser")
-            content.body
             sbook = self.name
-            stitle = content.body.div.find('p').string
+            stitle = content.body.center.h1.string
+            print(stitle)
             c1 = epub.EpubHtml(title=stitle, file_name=html)
             c1.content = "<h1>'+{1}+'</h1><p>{0}</p>".format(
                 content.body.div, stitle)
@@ -140,6 +144,14 @@ class Crawler(object):
         book.add_item(nav_css)
         # write to the file
         epub.write_epub(self.name+'.epub', book, {})
+
+    def save2mobi(self,input):
+        self.save2epub(input)
+        cmd="{0} {1}.epub {1}.mobi".format(calibre,self.name)
+        print(cmd)
+        # os.system(cmd)
+        ps = subprocess.Popen(cmd)
+        ps.wait();    #让程序阻塞
 
     def run(self, start_index):
         start = time.time()
@@ -190,8 +202,8 @@ class Crawler(object):
                     proxies = self.get_random_ip(iplist)    # 更换代理
                 print("正在爬取第 %d 页......" % index)
                 f.write(html)
-                # if index == 1:
-                    # break
+                # if index == 2:
+                #     break
             htmls.append(f_name)
 
         print("HTML文件下载完成，开始转换")
@@ -201,6 +213,8 @@ class Crawler(object):
                                 ".pdf", options=options)
             elif self.mode == 'epub':
                 self.save2epub(htmls)
+            elif self.mode =='mobi':
+                self.save2mobi(htmls)
         except:
             pass
         print("转换完成，开始清除无用HTML文件")
@@ -238,7 +252,7 @@ class LiaoxuefengPythonCrawler(Crawler):
             title_tag = bsObj.new_tag('h1')
             title_tag.string = title
             center_tag.insert(1, title_tag)
-            body.insert(1, center_tag)
+            # body.insert(1, center_tag)
 
             html = str(body)
             # body中的img标签的src相对路径的改成绝对路径
@@ -253,7 +267,7 @@ class LiaoxuefengPythonCrawler(Crawler):
                     return "".join([m.group(1), m.group(2), m.group(3)])
 
             html = re.compile(pattern).sub(func, html)
-            html = html_template.format(content=html)
+            html = html_template.format(title=center_tag,content=html)
             html = html.encode("utf-8")
             return html
         except Exception as e:
@@ -263,11 +277,12 @@ class LiaoxuefengPythonCrawler(Crawler):
 if __name__ == '__main__':
     start_url = "https://www.liaoxuefeng.com/wiki/1016959663602400"
     crawler = LiaoxuefengPythonCrawler("廖雪峰Python教程", start_url)
+    crawler.mode='mobi'
     crawler.run(0)
     
-    # bsObj = BeautifulSoup(open("E:\\项目\\PythonCrawler-Html2Pdf\\0.html",'r', encoding='UTF-8'), "html.parser")
+    # bsObj = BeautifulSoup(open("E:\\项目\\PythonCrawler-Html2Pdf\\1.html",'r', encoding='UTF-8'), "html.parser")
     # menu_tag = bsObj.body
-    # print(bsObj.body.div.find('p'))
+    # print(bsObj.body.center.h1.string)
     # print(bsObj.body.div)
     # for li in menu_tag.find_all("dd"):
     # url = li.a.get("href")
