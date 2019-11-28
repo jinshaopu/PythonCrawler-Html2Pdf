@@ -83,8 +83,9 @@ class shukebaCrawler(Crawler):
 def main(url, file):
     crawler = shukebaCrawler(file, url)
     # crawler.mode='pdf'
-    crawler.mode = 'epub'
-    crawler.run(694)
+    # crawler.mode = 'epub'
+    crawler.mode = 'mobi'
+    crawler.run(0)
 
 
 if __name__ == '__main__':
