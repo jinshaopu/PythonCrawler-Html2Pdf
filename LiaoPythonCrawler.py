@@ -120,11 +120,11 @@ class Crawler(object):
                 open(html, 'r', encoding='UTF-8'), "html.parser")
             sbook = self.name
             stitle = content.body.center.h1.string
-            print(stitle)
+            # print(stitle)
             c1 = epub.EpubHtml(title=stitle, file_name=html)
             c1.content = "<h1>'+{1}+'</h1><p>{0}</p>".format(
                 content.body.div, stitle)
-            print(c1.content)
+            # print(c1.content)
             book.add_item(c1)
             book.spine.append(c1)
             btoc.append(c1)
@@ -148,7 +148,7 @@ class Crawler(object):
     def save2mobi(self,input):
         self.save2epub(input)
         cmd="{0} {1}.epub {1}.mobi".format(calibre,self.name)
-        print(cmd)
+        # print(cmd)
         # os.system(cmd)
         ps = subprocess.Popen(cmd)
         ps.wait();    #让程序阻塞
