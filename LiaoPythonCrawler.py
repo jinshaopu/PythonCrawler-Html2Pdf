@@ -15,6 +15,8 @@ from ebooklib import epub
 from datetime import datetime
 import subprocess
 
+import cacheddb
+
 html_template = """
 <!DOCTYPE html>
 <html lang="en">
@@ -44,6 +46,7 @@ class Crawler(object):
         :param start_url: 爬虫入口URL
         """
         self.name = name
+        self.tempdb=cacheddb.novel('./temp.db',start_url)
         self.start_url = start_url
         self.domain = '{uri.scheme}://{uri.netloc}'.format(
             uri=urlparse(self.start_url))
@@ -153,8 +156,9 @@ class Crawler(object):
         ps = subprocess.Popen(cmd)
         ps.wait();    #让程序阻塞
 
-    def run(self, start_index):
+    def run(self, start_index=0):
         start = time.time()
+        start_index=self.tempdb.getMax()
         print("Start!")
         iplist = self.get_ip_list()
         proxies = self.get_random_ip(iplist)
@@ -205,7 +209,9 @@ class Crawler(object):
                 # if index == 2:
                 #     break
             htmls.append(f_name)
+            self.tempdb.append(index,f_name)
 
+        htmls=self.tempdb.gettmp()
         print("HTML文件下载完成，开始转换")
         try:
             if self.mode == 'pdf':
@@ -220,6 +226,7 @@ class Crawler(object):
         print("转换完成，开始清除无用HTML文件")
         for html in htmls:
             os.remove(html)
+        self.tempdb.deleteall()
         total_time = time.time() - start
         print(u"完成！总共耗时：%f 秒" % total_time)
 
@@ -278,7 +285,7 @@ if __name__ == '__main__':
     start_url = "https://www.liaoxuefeng.com/wiki/1016959663602400"
     crawler = LiaoxuefengPythonCrawler("廖雪峰Python教程", start_url)
     crawler.mode='mobi'
-    crawler.run(0)
+    crawler.run()
     
     # bsObj = BeautifulSoup(open("E:\\项目\\PythonCrawler-Html2Pdf\\1.html",'r', encoding='UTF-8'), "html.parser")
     # menu_tag = bsObj.body
