@@ -17,6 +17,10 @@ import subprocess
 
 import cacheddb
 
+# 取消证书验证
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
 html_template = """
 <!DOCTYPE html>
 <html lang="en">
@@ -30,7 +34,7 @@ html_template = """
 </html>
 """
 
-calibre="C:\Program Files (x86)\Calibre2\ebook-convert.exe"
+calibre = "C:\Program Files (x86)\Calibre2\ebook-convert.exe"
 
 
 class Crawler(object):
@@ -46,8 +50,9 @@ class Crawler(object):
         :param start_url: 爬虫入口URL
         """
         self.name = name
-        self.tempdb=cacheddb.novel('./temp.db',start_url)
+        self.tempdb = cacheddb.novel('./temp.db', start_url)
         self.start_url = start_url
+        self.http = '{uri.scheme}'.format(uri=urlparse(self.start_url))
         self.domain = '{uri.scheme}://{uri.netloc}'.format(
             uri=urlparse(self.start_url))
         self.headers = {
@@ -148,17 +153,17 @@ class Crawler(object):
         # write to the file
         epub.write_epub(self.name+'.epub', book, {})
 
-    def save2mobi(self,input):
+    def save2mobi(self, input):
         self.save2epub(input)
-        cmd="{0} {1}.epub {1}.mobi".format(calibre,self.name)
+        cmd = "{0} {1}.epub {1}.mobi".format(calibre, self.name)
         # print(cmd)
         # os.system(cmd)
         ps = subprocess.Popen(cmd)
-        ps.wait();    #让程序阻塞
+        ps.wait()  # 让程序阻塞
 
     def run(self, start_index=0):
         start = time.time()
-        start_index=self.tempdb.getMax()
+        start_index = self.tempdb.getMax()
         print("Start!")
         iplist = self.get_ip_list()
         proxies = self.get_random_ip(iplist)
@@ -209,23 +214,26 @@ class Crawler(object):
                 # if index == 2:
                 #     break
             htmls.append(f_name)
-            self.tempdb.append(index,f_name)
+            self.tempdb.append(index, f_name)
 
-        htmls=self.tempdb.gettmp()
+        htmls = self.tempdb.gettmp()
         print("HTML文件下载完成，开始转换")
         try:
             if self.mode == 'pdf':
                 pdfkit.from_file(input=htmls, output_path=self.name +
-                                ".pdf", options=options)
+                                 ".pdf", options=options)
             elif self.mode == 'epub':
                 self.save2epub(htmls)
-            elif self.mode =='mobi':
+            elif self.mode == 'mobi':
                 self.save2mobi(htmls)
         except:
             pass
         print("转换完成，开始清除无用HTML文件")
         for html in htmls:
-            os.remove(html)
+            try:
+                os.remove(html)
+            except Exception as identifier:
+                print(identifier)
         self.tempdb.deleteall()
         total_time = time.time() - start
         print(u"完成！总共耗时：%f 秒" % total_time)
@@ -274,7 +282,7 @@ class LiaoxuefengPythonCrawler(Crawler):
                     return "".join([m.group(1), m.group(2), m.group(3)])
 
             html = re.compile(pattern).sub(func, html)
-            html = html_template.format(title=center_tag,content=html)
+            html = html_template.format(title=center_tag, content=html)
             html = html.encode("utf-8")
             return html
         except Exception as e:
@@ -284,9 +292,9 @@ class LiaoxuefengPythonCrawler(Crawler):
 if __name__ == '__main__':
     start_url = "https://www.liaoxuefeng.com/wiki/1016959663602400"
     crawler = LiaoxuefengPythonCrawler("廖雪峰Python教程", start_url)
-    crawler.mode='mobi'
+    crawler.mode = 'mobi'
     crawler.run()
-    
+
     # bsObj = BeautifulSoup(open("E:\\项目\\PythonCrawler-Html2Pdf\\1.html",'r', encoding='UTF-8'), "html.parser")
     # menu_tag = bsObj.body
     # print(bsObj.body.center.h1.string)
